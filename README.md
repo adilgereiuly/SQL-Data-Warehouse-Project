@@ -13,9 +13,9 @@
 **Prerequisites**: PostgreSQL installed and running locally.
 
 1. Clone the repository
-2. Connect to your PostgreSQL instance and run `scripts/init_database.sql` (Step 1 while connected to `postgres`, Step 2 while connected to `datawarehouse`) to create the database and schemas
+2. Connect to your PostgreSQL instance and run `scripts/init_database.sql`
 3. Run `scripts/bronze/ddl_bronze.sql` to create Bronze tables
-4. Run `scripts/bronze/proc_load_bronze.sql` and call `CALL bronze.load_bronze();` — update the file paths in the COPY statements to match your local machine
+4. Run `scripts/bronze/proc_load_bronze.sql` and call `CALL bronze.load_bronze();`
 5. Run `scripts/silver/ddl_silver.sql` to create Silver tables
 6. Run `scripts/silver/proc_load_silver.sql` and call `CALL silver.load_silver();`
 7. Run `scripts/gold/ddl_gold.sql` to create Gold views
