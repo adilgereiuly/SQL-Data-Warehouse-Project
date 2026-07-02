@@ -1,0 +1,86 @@
+/*
+=============================================================
+DDL: Gold Layer - View Definitions
+=============================================================
+Script Purpose:
+    This script creates the Gold layer views for the Data Warehouse.
+    Gold layer objects represent business-ready, integrated data
+    modeled using a Star Schema, designed for analytical reporting
+    and consumption by Data Analysts and business users.
+
+    Views created:
+        - gold.dim_customers
+        - gold.dim_product
+        - gold.fact_sales
+
+NOTE:
+    Gold layer objects are implemented as views — no data is
+    physically stored at this layer. All transformations and
+    integrations are applied at query time against Silver tables.
+*/
+
+
+CREATE VIEW gold.dim_customers AS
+SELECT
+ROW_NUMBER() OVER(ORDER BY ci.cst_id) AS customer_key,
+ci.cst_id customer_id,
+ci.cst_key customer_number,
+ci.cst_firstname firstname,
+ci.cst_lastname lastname,
+ci.cst_marital_status marital_status,
+CASE WHEN ci.cst_gndr != 'Unknown' THEN ci.cst_gndr
+ELSE COALESCE(ca.gen, 'Unknown')
+END gender,
+ci.cst_create_date create_date,
+ca.bdate birthdate,
+cn.cntry country
+
+
+FROM silver.crm_cust_info ci
+LEFT JOIN silver.erp_cust_az12 ca
+ON ci.cst_key = ca.cid
+LEFT JOIN silver.erp_loc_a101 cn
+ON ci.cst_key = cn.cid;
+
+
+
+CREATE VIEW gold.dim_product AS
+SELECT
+ROW_NUMBER() OVER(ORDER BY pi.prd_start_dt, pi.prd_key) AS product_key,
+pi.prd_id product_id,
+pi.prd_key product_number,
+pi.prd_nm product_name,
+pi.prd_cost cost,
+pi.prd_line product_line,
+pi.prd_start_dt start_date,
+pi.prd_end_dt end_date,
+pc.cat category,
+pc.subcat subcategory,
+pc.maintenance
+
+FROM silver.crm_prd_info pi
+LEFT JOIN silver.erp_cat_g1v2 pc
+ON pi.cat_id = pc.id
+WHERE pi.prd_end_dt IS NULL -- Filtering historical data
+
+
+CREATE VIEW gold.fact_sales AS
+SELECT
+sd.sls_ord_num AS order_number,
+pr.product_key,
+dm.customer_id,
+sd.sls_order_dt AS order_date,
+sd.sls_ship_dt AS shipping_datd,
+sd.sls_due_dt AS due_date,
+sd.sls_sales AS sales,
+sd.sls_quantity AS quantity,
+sd.sls_price AS price
+FROM silver.crm_sales_details sd
+LEFT JOIN gold.dim_product pr
+ON sd.sls_prd_key = pr.product_number
+LEFT JOIN gold.dim_customers dm
+ON sd.sls_cust_id = dm.customer_id
+
+
+
+
